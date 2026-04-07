@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lottie 文件压缩工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f7f7f8;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 52px 24px 80px;
+      transition: padding 0.4s ease;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+      transition: margin 0.4s ease;
+    }
+    .header-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b7280;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 99px;
+      padding: 5px 14px;
+      margin-bottom: 18px;
+    }
+    .header-eyebrow span { color: #10b981; }
+    .header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: -0.75px;
+      line-height: 1.15;
+    }
+    .header h1 em { font-style: normal; color: #9ca3af; }
+    .header p {
+      margin-top: 10px;
+      color: #6b7280;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+    .header p strong { color: #10b981; font-weight: 600; }
+
+    /* ── Page layout wrapper ── */
+    .page-layout {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      transition: max-width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .page-layout.split {
+      max-width: 1200px;
+    }
+
+    /* ── Left panel ── */
+    .left-panel {
+      flex: 0 0 400px;
+      min-width: 0;
+      transition: flex-basis 0.4s ease;
+    }
+    .page-layout:not(.split) .left-panel {
+      flex: 1;
+    }
+
+    /* ── Right panel ── */
+    .right-panel {
+      flex: 1;
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(24px);
+      pointer-events: none;
+      transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+      display: none;
+    }
+    .page-layout.split .right-panel {
+      display: block;
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 32px;
+      width: 100%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    .divider {
+      height: 1px;
+      background: #f3f4f6;
+      margin: 24px 0;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 1.5px dashed #d1d5db;
+      border-radius: 14px;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      background: #fafafa;
+    }
+    .drop-zone:hover { border-color: #9ca3af; background: #f9fafb; }
+    .drop-zone.dragover { border-color: #111827; background: #f3f4f6; }
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .drop-icon {
+      width: 48px; height: 48px;
+      margin: 0 auto 14px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .drop-zone h2 { font-size: 0.9375rem; font-weight: 600; color: #111827; margin-bottom: 5px; }
+    .drop-zone p { font-size: 0.8rem; color: #9ca3af; }
+    .browse-btn {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 8px 20px;
+      background: #111827;
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 0.8125rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .browse-btn:hover { background: #1f2937; }
+    .browse-btn:active { transform: scale(0.97); }
+
+    /* ── Settings ── */
+    .settings-title {
+      font-size: 0.72rem; font-weight: 600; color: #9ca3af;
+      letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .settings label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.875rem; color: #374151; font-weight: 500; margin-bottom: 10px;
+    }
+    .settings label span.val {
+      font-weight: 700; color: #111827; min-width: 32px; text-align: right;
+    }
+    input[type=range] { width: 100%; accent-color: #111827; cursor: pointer; }
+    .settings-row { display: flex; gap: 8px; margin-top: 14px; }
+    .toggle-btn {
+      flex: 1; padding: 10px 6px;
+      border: 1.5px solid #e5e7eb; border-radius: 10px;
+      background: #fff; color: #6b7280;
+      font-size: 0.72rem; font-family: inherit; cursor: pointer;
+      transition: all 0.15s;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .toggle-btn .tb-label { font-weight: 600; color: #374151; font-size: 0.8rem; }
+    .toggle-btn:hover { border-color: #9ca3af; }
+    .toggle-btn.active { border-color: #111827; background: #111827; }
+    .toggle-btn.active .tb-label { color: #fff; }
+    .toggle-btn.active span:not(.tb-label) { color: #6b7280; }
+
+    /* ── Progress ── */
+    .progress-wrap { display: none; }
+    .progress-wrap.show { display: block; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; color: #6b7280; font-weight: 500; margin-bottom: 10px;
+    }
+    .progress-bar-track {
+      height: 4px; background: #f3f4f6; border-radius: 99px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; background: #111827; border-radius: 99px;
+      width: 0%; transition: width 0.3s;
+    }
+    .progress-status { margin-top: 9px; font-size: 0.75rem; color: #9ca3af; min-height: 1.2em; }
+
+    /* ── Result (left panel) ── */
+    .result-box { display: none; }
+    .result-box.show { display: block; }
+    .result-box h3 {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em;
+      color: #9ca3af; font-weight: 600; margin-bottom: 14px;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #f9fafb; border: 1px solid #f3f4f6;
+      border-radius: 10px; padding: 14px 10px; text-align: center;
+    }
+    .stat-card .st-val {
+      font-size: 1.2rem; font-weight: 700; color: #111827; letter-spacing: -0.4px;
+    }
+    .stat-card .st-val.green { color: #059669; }
+    .stat-card .st-label { font-size: 0.68rem; color: #9ca3af; margin-top: 3px; font-weight: 500; }
+
+    .assets-table {
+      width: 100%; border-collapse: collapse; font-size: 0.775rem; margin-bottom: 18px;
+    }
+    .assets-table th {
+      text-align: left; color: #9ca3af; padding: 5px 8px;
+      border-bottom: 1px solid #f3f4f6; font-weight: 500; font-size: 0.72rem;
+    }
+    .assets-table td {
+      padding: 9px 8px; border-bottom: 1px solid #f9fafb;
+      color: #374151; vertical-align: middle;
+    }
+    .assets-table tr:last-child td { border-bottom: none; }
+    .assets-table tr:hover td { background: #fafafa; }
+    .badge {
+      display: inline-block; padding: 2px 7px; border-radius: 5px;
+      font-size: 0.67rem; font-weight: 600;
+      background: #f3f4f6; color: #6b7280; letter-spacing: 0.03em;
+    }
+    .badge.green { background: #ecfdf5; color: #059669; }
+
+    .download-btn {
+      width: 100%; padding: 12px;
+      background: #111827; border: none; border-radius: 10px;
+      color: #fff; font-size: 0.9rem; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .download-btn:hover { background: #1f2937; }
+    .download-btn:active { transform: scale(0.99); }
+    .reset-btn {
+      width: 100%; margin-top: 8px; padding: 10px;
+      background: transparent; border: 1.5px solid #e5e7eb;
+      border-radius: 10px; color: #9ca3af; font-size: 0.875rem;
+      font-family: inherit; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .reset-btn:hover { border-color: #9ca3af; color: #6b7280; }
+
+    /* ── Error ── */
+    .error-box {
+      display: none; margin-top: 18px;
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 10px; padding: 12px 15px;
+      color: #b91c1c; font-size: 0.8375rem; line-height: 1.5;
+    }
+    .error-box.show { display: block; }
+
+    /* ── Compat warn ── */
+    .compat-warn {
+      display: none; margin-top: 0;
+      padding: 11px 14px; background: #fffbeb;
+      border: 1px solid #fde68a; border-radius: 10px;
+      color: #92400e; font-size: 0.78rem; line-height: 1.5;
+    }
+    .compat-warn.show { display: block; }
+
+    /* ═══════════════════════════
+       RIGHT PANEL — PREVIEW
+    ═══════════════════════════ */
+    .preview-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 24px;
+    }
+
+    /* Animation viewport */
+    .preview-stage {
+      background: #f7f7f8;
+      position: relative;
+      overflow: hidden;
+      /* aspect-ratio set dynamically from animation w/h */
+      /* fallback for placeholder state */
+      min-height: 280px;
+    }
+    .preview-stage.has-anim {
+      min-height: unset;
+    }
+    .preview-stage::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    #lottiePlayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      transform-origin: center center;
+      transition: transform 0.15s ease;
+    }
+    #lottiePlayer svg {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      color: #d1d5db;
+    }
+    .preview-placeholder svg { margin-bottom: 10px; opacity: 0.4; }
+    .preview-placeholder p { font-size: 0.8rem; }
+
+    /* Playback bar */
+    .playback-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-top: 1px solid #f3f4f6;
+      background: #fff;
+    }
+    .play-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: #111827;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .play-btn:hover { background: #1f2937; }
+    .play-btn:active { transform: scale(0.93); }
+    .play-btn svg { width: 14px; height: 14px; fill: #fff; }
+    .speed-select {
+      font-size: 0.75rem; color: #6b7280; font-family: inherit;
+      border: 1px solid #e5e7eb; border-radius: 6px;
+      padding: 5px 8px; background: #fff; cursor: pointer;
+      appearance: none; outline: none;
+    }
+    .loop-btn {
+      width: 30px; height: 30px; border-radius: 6px;
+      border: 1.5px solid #e5e7eb; background: #fff;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #9ca3af; transition: all 0.15s;
+    }
+    .loop-btn.active { border-color: #111827; background: #111827; color: #fff; }
+    .loop-btn svg { width: 14px; height: 14px; }
+    .frame-label { font-size: 0.72rem; color: #9ca3af; font-weight: 500; }
+
+    /* Zoom controls */
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-left: auto;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .zoom-btn {
+      width: 30px; height: 30px;
+      border: none; background: transparent;
+      cursor: pointer; color: #374151;
+      font-size: 1rem; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+    .zoom-btn:hover { background: #f3f4f6; }
+    .zoom-btn:active { background: #e5e7eb; }
+    .zoom-btn:disabled { color: #d1d5db; cursor: not-allowed; }
+    .zoom-btn:disabled:hover { background: transparent; }
+    .zoom-divider { width: 1px; height: 18px; background: #e5e7eb; flex-shrink: 0; }
+    .zoom-label {
+      min-width: 42px; text-align: center;
+      font-size: 0.72rem; font-weight: 600; color: #374151;
+      cursor: default; user-select: none;
+    }
+    .zoom-reset {
+      width: 30px; height: 30px;
+      border: none; background: transparent;
+      cursor: pointer; color: #9ca3af;
+      font-size: 0.7rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, color 0.12s;
+      border-left: 1px solid #e5e7eb;
+    }
+    .zoom-reset:hover { background: #f3f4f6; color: #374151; }
+    .bar-spacer { flex: 1; }
+    .frame-counter {
+      font-size: 0.72rem; color: #d1d5db; font-weight: 500;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      min-width: 64px;
+      text-align: right;
+    }
+
+    /* Details panel */
+    .detail-section {
+      padding: 20px 22px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .detail-section h4 {
+      font-size: 0.72rem; font-weight: 600; color: #9ca3af;
+      letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .detail-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f9fafb;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .d-key { font-size: 0.8375rem; color: #9ca3af; }
+    .detail-row .d-val {
+      font-size: 0.8375rem; font-weight: 600; color: #111827;
+      letter-spacing: -0.2px;
+    }
+    .detail-row .d-val.green { color: #059669; }
+
+    /* Size comparison row */
+    .size-compare {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8375rem; font-weight: 600;
+    }
+    .size-compare .old { color: #d1d5db; text-decoration: line-through; font-weight: 400; }
+    .size-compare .arrow { color: #d1d5db; font-size: 0.75rem; }
+    .size-compare .new { color: #059669; }
+    .size-badge {
+      font-size: 0.67rem; font-weight: 700;
+      background: #ecfdf5; color: #059669;
+      padding: 2px 7px; border-radius: 99px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 28px; text-align: center;
+      font-size: 0.75rem; color: #d1d5db;
+    }
+    .footer a { color: #9ca3af; text-decoration: none; }
+    .footer a:hover { color: #6b7280; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow"><span>●</span> 完全本地处理 · 无需上传</div>
+  <h1>Lottie 文件<em>压缩工具</em></h1>
+  <p>将 JSON 内嵌图片转为 WebP，体积减少 <strong>~90%</strong>，本地即时预览</p>
+</div>
+
+<div class="page-layout" id="pageLayout">
+
+  <!-- ══ LEFT PANEL ══ -->
+  <div class="left-panel">
+    <div class="card">
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".json,application/json" />
+        <div class="drop-icon">📄</div>
+        <h2>拖拽 Lottie JSON 文件到此处</h2>
+        <p>支持包含内嵌 base64 图片的 Lottie 动画文件</p>
+        <button class="browse-btn" onclick="document.getElementById('fileInput').click(); event.stopPropagation()">选择文件</button>
+      </div>
+
+      <div class="compat-warn" id="compatWarn">
+        ⚠️ 当前浏览器可能不支持 WebP 编码，建议使用 Chrome 或 Edge 以获得最佳压缩效果。
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Settings -->
+      <div class="settings">
+        <div class="settings-title">压缩参数</div>
+        <label>
+          WebP 图片质量
+          <span class="val" id="qualityVal">80%</span>
+        </label>
+        <input type="range" id="qualitySlider" min="10" max="100" value="80"
+               oninput="document.getElementById('qualityVal').textContent = this.value + '%'" />
+        <div class="settings-row">
+          <button class="toggle-btn active" id="btnLossy" onclick="setMode('lossy')">
+            <span class="tb-label">有损压缩</span>
+            <span>体积更小</span>
+          </button>
+          <button class="toggle-btn" id="btnLossless" onclick="setMode('lossless')">
+            <span class="tb-label">无损压缩</span>
+            <span>质量最佳</span>
+          </button>
+          <button class="toggle-btn active" id="btnMinify" onclick="toggleMinify()">
+            <span class="tb-label">JSON 压缩</span>
+            <span>去除空格</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="divider"></div>
+        <div class="progress-label">
+          <span id="progressText">处理中...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-status" id="progressStatus"></div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="errorBox"></div>
+
+      <!-- Result -->
+      <div class="result-box" id="resultBox">
+        <div class="divider"></div>
+        <h3>压缩结果</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="st-val" id="statOriginal">—</div>
+            <div class="st-label">原始大小</div>
+          </div>
+          <div class="stat-card">
+            <div class="st-val green" id="statOptimized">—</div>
+            <div class="st-label">压缩后大小</div>
+          </div>
+          <div class="stat-card">
+            <div class="st-val" id="statRatio">—</div>
+            <div class="st-label">体积减少</div>
+          </div>
+        </div>
+
+        <table class="assets-table" id="assetsTable">
+          <thead>
+            <tr>
+              <th>资源 ID</th>
+              <th>格式</th>
+              <th>原始</th>
+              <th>压缩后</th>
+              <th>节省</th>
+            </tr>
+          </thead>
+          <tbody id="assetsTbody"></tbody>
+        </table>
+
+        <button class="download-btn" onclick="downloadResult()">下载压缩后的文件</button>
+        <button class="reset-btn" onclick="resetAll()">重新选择文件</button>
+      </div>
+
+    </div><!-- /card -->
+  </div><!-- /left-panel -->
+
+  <!-- ══ RIGHT PANEL — PREVIEW ══ -->
+  <div class="right-panel" id="rightPanel">
+    <div class="preview-card">
+
+      <!-- Animation stage -->
+      <div class="preview-stage" id="previewStage">
+        <div class="preview-placeholder" id="previewPlaceholder">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
+          <p>压缩完成后在此预览动画</p>
+        </div>
+        <div id="lottiePlayer"></div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="playback-bar" id="playbackBar" style="display:none">
+        <button class="play-btn" id="playBtn" onclick="togglePlay()" title="播放/暂停">
+          <!-- pause icon (default, animation auto-plays) -->
+          <svg id="iconPause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          <svg id="iconPlay" viewBox="0 0 24 24" style="display:none"><polygon points="5,3 19,12 5,21"/></svg>
+        </button>
+        <select class="speed-select" id="speedSelect" onchange="setSpeed(this.value)" title="播放速度">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+        <button class="loop-btn active" id="loopBtn" onclick="toggleLoop()" title="循环">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
+            <path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+          </svg>
+        </button>
+
+        <div class="bar-spacer"></div>
+        <!-- Zoom controls -->
+        <div class="zoom-group">
+          <button class="zoom-btn" id="zoomOutBtn" onclick="zoomOut()" title="缩小">−</button>
+          <div class="zoom-divider"></div>
+          <span class="zoom-label" id="zoomLabel">100%</span>
+          <div class="zoom-divider"></div>
+          <button class="zoom-btn" id="zoomInBtn" onclick="zoomIn()" title="放大">+</button>
+          <button class="zoom-reset" onclick="resetZoom()" title="重置缩放">↺</button>
+        </div>
+        <!-- Frame counter: fixed width, right-aligned, after zoom group -->
+        <span class="frame-counter" id="frameLabel">—</span>
+      </div>
+
+      <!-- Animation details -->
+      <div class="detail-section">
+        <h4>动画信息</h4>
+        <div class="detail-row">
+          <span class="d-key">文件大小</span>
+          <div class="size-compare">
+            <span class="old" id="detailSizeOld">—</span>
+            <span class="arrow">→</span>
+            <span class="new" id="detailSizeNew">—</span>
+            <span class="size-badge" id="detailSavePct" style="display:none"></span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="d-key">帧率</span>
+          <span class="d-val" id="detailFr">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="d-key">分辨率</span>
+          <span class="d-val" id="detailRes">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="d-key">总帧数</span>
+          <span class="d-val" id="detailFrames">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="d-key">图层数</span>
+          <span class="d-val" id="detailLayers">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="d-key">时长</span>
+          <span class="d-val green" id="detailDuration">—</span>
+        </div>
+      </div>
+
+    </div><!-- /preview-card -->
+  </div><!-- /right-panel -->
+
+</div><!-- /page-layout -->
+
+<div class="footer">
+  文件在本地浏览器处理，不会上传至任何服务器 &nbsp;·&nbsp;
+  基于 <a href="https://github.com/SJunWah/lottie-file-optimizer" target="_blank">lottie-file-optimizer</a>
+</div>
+
+<script>
+  // ── State ──
+  let losslessMode = false;
+  let minifyJson = true;
+  let resultBlob = null;
+  let resultFilename = '';
+  let lottieAnim = null;
+  let isPlaying = true;
+  let isLoop = true;
+  let optimizedLottieData = null;
+
+  // ── WebP support check ──
+  function checkWebPSupport() {
+    const c = document.createElement('canvas');
+    c.width = 1; c.height = 1;
+    return c.toDataURL('image/webp').startsWith('data:image/webp');
+  }
+  if (!checkWebPSupport()) document.getElementById('compatWarn').classList.add('show');
+
+  // ── Mode toggles ──
+  function setMode(mode) {
+    losslessMode = mode === 'lossless';
+    document.getElementById('btnLossy').classList.toggle('active', !losslessMode);
+    document.getElementById('btnLossless').classList.toggle('active', losslessMode);
+    document.getElementById('qualitySlider').disabled = losslessMode;
+    document.getElementById('qualityVal').style.opacity = losslessMode ? '0.4' : '1';
+  }
+  function toggleMinify() {
+    minifyJson = !minifyJson;
+    document.getElementById('btnMinify').classList.toggle('active', minifyJson);
+  }
+
+  // ── Drag & Drop ──
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  // ── Helpers ──
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(2) + ' MB';
+  }
+  function getFormatFromDataURI(uri) {
+    const m = uri.match(/^data:image\/(png|jpeg|jpg|gif|tiff|webp);base64,/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+  function setProgress(pct, text, status) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    if (text) document.getElementById('progressText').textContent = text;
+    if (status !== undefined) document.getElementById('progressStatus').textContent = status;
+  }
+
+  // ── Convert image to WebP ──
+  function convertToWebP(dataURI, quality, lossless) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const q = lossless ? 1.0 : (quality / 100);
+        const out = canvas.toDataURL('image/webp', q);
+        resolve({ dataURI: out, fallback: !out.startsWith('data:image/webp') });
+      };
+      img.onerror = () => reject(new Error('图片解码失败'));
+      img.src = dataURI;
+    });
+  }
+
+  // ── Main processing ──
+  async function handleFile(file) {
+    if (!file.name.endsWith('.json')) { showError('请选择 .json 格式的 Lottie 文件'); return; }
+    hideError();
+    showProgress();
+    hideResult();
+    hideSplit();
+    resultBlob = null;
+    resultFilename = file.name.replace('.json', '') + '-optimized.json';
+    const quality = parseInt(document.getElementById('qualitySlider').value);
+
+    try {
+      setProgress(5, '读取文件...', '');
+      const text = await readFileAsText(file);
+      const originalBytes = new TextEncoder().encode(text).length;
+
+      setProgress(15, '解析 JSON...', '');
+      let lottieObj;
+      try { lottieObj = JSON.parse(text); }
+      catch (e) { throw new Error('JSON 解析失败，请确认文件是有效的 Lottie JSON'); }
+
+      const assets = lottieObj.assets || [];
+      const imageAssets = assets.filter(a => a && typeof a.p === 'string' && a.p.startsWith('data:image/'));
+
+      if (imageAssets.length === 0) {
+        throw new Error('未找到内嵌图片资源。此文件可能不含 base64 图片，或已是外链资源。');
+      }
+
+      setProgress(20, `发现 ${imageAssets.length} 个图片资源，开始转换...`, '');
+      const assetStats = [];
+      const step = 70 / imageAssets.length;
+
+      for (let idx = 0; idx < imageAssets.length; idx++) {
+        const asset = imageAssets[idx];
+        const originalDataURI = asset.p;
+        const fmt = getFormatFromDataURI(originalDataURI) || '未知';
+        const originalLen = originalDataURI.length;
+
+        setProgress(
+          Math.round(20 + idx * step),
+          `转换图片 ${idx + 1} / ${imageAssets.length}`,
+          `资源 #${idx}: ${fmt.toUpperCase()} → WebP`
+        );
+
+        let newDataURI = originalDataURI, fallback = false;
+        try {
+          const r = await convertToWebP(originalDataURI, quality, losslessMode);
+          newDataURI = r.dataURI; fallback = r.fallback;
+        } catch(e) { fallback = true; }
+
+        asset.p = newDataURI;
+        const newLen = newDataURI.length;
+        assetStats.push({
+          id: asset.id || `asset_${idx}`, format: fmt,
+          originalLen, newLen,
+          saving: originalLen > newLen ? Math.round((1 - newLen / originalLen) * 100) : 0,
+          fallback
+        });
+      }
+
+      setProgress(90, 'JSON 序列化...', '');
+      const outputJson = minifyJson ? JSON.stringify(lottieObj) : JSON.stringify(lottieObj, null, 2);
+      const outputBytes = new TextEncoder().encode(outputJson).length;
+
+      setProgress(100, '完成！', '');
+      resultBlob = new Blob([outputJson], { type: 'application/json' });
+      optimizedLottieData = lottieObj;
+
+      setTimeout(() => {
+        hideProgress();
+        showResult(originalBytes, outputBytes, assetStats);
+        showPreview(lottieObj, originalBytes, outputBytes);
+      }, 400);
+
+    } catch(e) {
+      hideProgress();
+      showError(e.message || String(e));
+    }
+  }
+
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.onerror = reject;
+      r.readAsText(file, 'utf-8');
+    });
+  }
+
+  // ── UI: progress ──
+  function showProgress() { document.getElementById('progressWrap').classList.add('show'); setProgress(0, '准备中...', ''); }
+  function hideProgress() { document.getElementById('progressWrap').classList.remove('show'); }
+
+  // ── UI: result (left) ──
+  function showResult(originalBytes, outputBytes, assetStats) {
+    document.getElementById('statOriginal').textContent = formatBytes(originalBytes);
+    document.getElementById('statOptimized').textContent = formatBytes(outputBytes);
+    const ratio = originalBytes > outputBytes ? Math.round((1 - outputBytes / originalBytes) * 100) : 0;
+    document.getElementById('statRatio').textContent = ratio + '%';
+
+    const tbody = document.getElementById('assetsTbody');
+    tbody.innerHTML = '';
+    assetStats.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:0.72rem;color:#9ca3af">${s.id}</td>
+        <td><span class="badge">${s.format.toUpperCase()}</span></td>
+        <td>${formatBytes(Math.round(s.originalLen * 0.75))}</td>
+        <td>${s.fallback ? '<span style="color:#d1d5db">原样</span>' : formatBytes(Math.round(s.newLen * 0.75))}</td>
+        <td>${s.fallback ? '—' : `<span class="badge green">↓${s.saving}%</span>`}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('resultBox').classList.add('show');
+  }
+  function hideResult() { document.getElementById('resultBox').classList.remove('show'); }
+
+  // ── UI: preview (right) ──
+  function showPreview(lottieData, originalBytes, outputBytes) {
+    // Switch to split layout
+    document.getElementById('pageLayout').classList.add('split');
+
+    // Destroy previous animation
+    if (lottieAnim) { lottieAnim.destroy(); lottieAnim = null; }
+
+    // Set stage aspect ratio from animation dimensions
+    const stage = document.getElementById('previewStage');
+    const w = lottieData.w || 0;
+    const h = lottieData.h || 0;
+    if (w > 0 && h > 0) {
+      stage.style.aspectRatio = `${w} / ${h}`;
+    } else {
+      stage.style.aspectRatio = '1 / 1'; // fallback square
+    }
+    stage.classList.add('has-anim');
+
+    // Reset zoom for new file
+    zoomLevel = 1.0;
+    applyZoom();
+
+    // Init lottie player
+    const playerEl = document.getElementById('lottiePlayer');
+    playerEl.innerHTML = '';
+    document.getElementById('previewPlaceholder').style.display = 'none';
+
+    lottieAnim = lottie.loadAnimation({
+      container: playerEl,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: lottieData
+    });
+    isPlaying = true;
+    isLoop = true;
+    updatePlayIcon();
+    document.getElementById('loopBtn').classList.add('active');
+
+    // Frame counter
+    lottieAnim.addEventListener('enterFrame', () => {
+      if (!lottieAnim) return;
+      const cur = Math.floor(lottieAnim.currentFrame) + 1;
+      const total = Math.floor(lottieAnim.totalFrames);
+      document.getElementById('frameLabel').textContent = `${cur} / ${total} f`;
+    });
+
+    document.getElementById('playbackBar').style.display = 'flex';
+
+    // Fill animation details
+    const fr = lottieData.fr || 0;
+    const ip = lottieData.ip || 0;
+    const op = lottieData.op || 0;
+    const totalFrames = op - ip;
+    const duration = fr > 0 ? (totalFrames / fr).toFixed(1) : '—';
+    const layers = (lottieData.layers || []).length;
+
+    document.getElementById('detailFr').textContent = fr ? fr + ' FPS' : '—';
+    document.getElementById('detailRes').textContent = (lottieData.w && lottieData.h)
+      ? `${lottieData.w} × ${lottieData.h} px` : '—';
+    document.getElementById('detailFrames').textContent = totalFrames || '—';
+    document.getElementById('detailLayers').textContent = layers || '—';
+    document.getElementById('detailDuration').textContent = duration !== '—' ? duration + ' 秒' : '—';
+
+    // File size compare
+    document.getElementById('detailSizeOld').textContent = formatBytes(originalBytes);
+    document.getElementById('detailSizeNew').textContent = formatBytes(outputBytes);
+    const pct = originalBytes > outputBytes ? Math.round((1 - outputBytes / originalBytes) * 100) : 0;
+    if (pct > 0) {
+      const badge = document.getElementById('detailSavePct');
+      badge.textContent = '↓' + pct + '%';
+      badge.style.display = 'inline';
+    }
+  }
+
+  function hideSplit() {
+    document.getElementById('pageLayout').classList.remove('split');
+    if (lottieAnim) { lottieAnim.destroy(); lottieAnim = null; }
+    document.getElementById('lottiePlayer').innerHTML = '';
+    const stageEl = document.getElementById('previewStage');
+    stageEl.style.aspectRatio = '';
+    stageEl.classList.remove('has-anim');
+    document.getElementById('previewPlaceholder').style.display = '';
+    document.getElementById('playbackBar').style.display = 'none';
+    document.getElementById('frameLabel').textContent = '—';
+  }
+
+  // ── Zoom controls ──
+  let zoomLevel = 1.0;
+  const ZOOM_MIN = 0.2;
+  const ZOOM_MAX = 2.0;
+  const ZOOM_STEP = 0.1;
+
+  function applyZoom() {
+    document.getElementById('lottiePlayer').style.transform = `scale(${zoomLevel})`;
+    document.getElementById('zoomLabel').textContent = Math.round(zoomLevel * 100) + '%';
+    document.getElementById('zoomOutBtn').disabled = zoomLevel <= ZOOM_MIN;
+    document.getElementById('zoomInBtn').disabled = zoomLevel >= ZOOM_MAX;
+  }
+  function zoomIn() {
+    zoomLevel = Math.min(ZOOM_MAX, parseFloat((zoomLevel + ZOOM_STEP).toFixed(2)));
+    applyZoom();
+  }
+  function zoomOut() {
+    zoomLevel = Math.max(ZOOM_MIN, parseFloat((zoomLevel - ZOOM_STEP).toFixed(2)));
+    applyZoom();
+  }
+  function resetZoom() {
+    zoomLevel = 1.0;
+    applyZoom();
+  }
+
+  // Mouse wheel zoom on the preview stage
+  document.getElementById('previewStage').addEventListener('wheel', e => {
+    if (!lottieAnim) return;
+    e.preventDefault();
+    if (e.deltaY < 0) zoomIn();
+    else zoomOut();
+  }, { passive: false });
+
+  // ── Playback controls ──
+  function togglePlay() {
+    if (!lottieAnim) return;
+    if (isPlaying) { lottieAnim.pause(); isPlaying = false; }
+    else { lottieAnim.play(); isPlaying = true; }
+    updatePlayIcon();
+  }
+  function updatePlayIcon() {
+    document.getElementById('iconPause').style.display = isPlaying ? '' : 'none';
+    document.getElementById('iconPlay').style.display = isPlaying ? 'none' : '';
+  }
+  function setSpeed(val) {
+    if (lottieAnim) lottieAnim.setSpeed(parseFloat(val));
+  }
+  function toggleLoop() {
+    if (!lottieAnim) return;
+    isLoop = !isLoop;
+    lottieAnim.loop = isLoop;
+    document.getElementById('loopBtn').classList.toggle('active', isLoop);
+  }
+
+  // ── Error ──
+  function showError(msg) {
+    const el = document.getElementById('errorBox');
+    el.textContent = '❌ ' + msg;
+    el.classList.add('show');
+  }
+  function hideError() { document.getElementById('errorBox').classList.remove('show'); }
+
+  // ── Download ──
+  function downloadResult() {
+    if (!resultBlob) return;
+    const url = URL.createObjectURL(resultBlob);
+    const a = document.createElement('a');
+    a.href = url; a.download = resultFilename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // ── Reset ──
+  function resetAll() {
+    hideResult(); hideProgress(); hideError(); hideSplit();
+    resultBlob = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('detailSavePct').style.display = 'none';
+    ['detailFr','detailRes','detailFrames','detailLayers','detailDuration',
+     'detailSizeOld','detailSizeNew'].forEach(id => document.getElementById(id).textContent = '—');
+  }
+</script>
+</body>
+</html>
